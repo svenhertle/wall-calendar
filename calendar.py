@@ -67,6 +67,37 @@ class Calendar:
     def add_color(self, normal, light):
         self.colors.append([normal, light])
 
+    def print_text(self, text, x, y, size, color=DEFAULT_COLOR, relative="tl"):
+        # font size
+        self.ctx.set_font_size(size)
+
+        # position
+        x_diff = 0
+        y_diff = 0
+        x_bearing, y_bearing, width, height, x_advance, y_advance = self.ctx.text_extents(text)
+
+        if relative == "c":  # center
+            x_diff = -(width/2 + x_bearing)
+            y_diff = -(height/2 + y_bearing)
+        elif relative == "tl":  # top left
+            y_diff = +height
+        elif relative == "tr":  # top right
+            x_diff = -width - x_bearing
+            y_diff = +height
+        elif relative == "br":  # bottom right
+            x_diff = -width - x_bearing
+
+        # set position for text
+        self.ctx.move_to(x + x_diff, y + y_diff)
+
+        # draw with color
+        self.ctx.set_source_rgb(**color)
+        self.ctx.show_text(text)
+        self.ctx.set_source_rgb(**Calendar.DEFAULT_COLOR)
+
+        # finish
+        self.ctx.stroke()
+
     def __coords_space_boxes(self):
         space_x = (Calendar.WIDTH - Calendar.PADDING_LEFT -
                   Calendar.PADDING_RIGHT - 12*Calendar.BOX_WIDTH) / 11
@@ -104,8 +135,8 @@ class Calendar:
         self.__rectangle(x, y, Calendar.BOX_WIDTH, Calendar.BOX_HEIGHT, color)
 
         # text
-        self.__text(date.strftime("%B"), x_center, y_center,
-                    Calendar.SIZE_MONTH)
+        self.print_text(date.strftime("%B"), x_center, y_center,
+                        Calendar.SIZE_MONTH, relative="c")
 
     def __print_day(self, date):
         # positions
@@ -123,51 +154,30 @@ class Calendar:
 
         # day number
         text_padding = max(0.1*Calendar.SIZE_DAY_NUMBER, 3)
-        self.__text(date.strftime("%d"), x + text_padding, y + text_padding,
-                    Calendar.SIZE_DAY_NUMBER, "tl")
+        self.print_text(date.strftime("%d"), x + text_padding,
+                        y + text_padding, Calendar.SIZE_DAY_NUMBER,
+                        relative="tl")
 
         # weekday
         text_padding = max(0.1*Calendar.SIZE_DAY, 3)
-        self.__text(date.strftime("%a"), x + Calendar.BOX_WIDTH - text_padding,
-                    y + Calendar.BOX_HEIGHT - text_padding, Calendar.SIZE_DAY,
-                    "br")
+        self.print_text(date.strftime("%a"),
+                        x + Calendar.BOX_WIDTH - text_padding,
+                        y + Calendar.BOX_HEIGHT - text_padding,
+                        Calendar.SIZE_DAY, relative="br")
 
-    def __rectangle(self, x, y, w, h, fill_color=DEFAULT_COLOR):
+    def __rectangle(self, x, y, w, h, fill_color=None):
+        # print rectangle
         self.ctx.rectangle(x, y, w, h)
+
+        # fill with color
         if not fill_color is None:
             self.ctx.set_source_rgb(**fill_color)
             self.ctx.fill()
             self.ctx.set_source_rgb(**Calendar.DEFAULT_COLOR)
-        self.ctx.rectangle(x, y, w, h)  # lines (FIXME)
+
+            # print border
+            self.ctx.rectangle(x, y, w, h)  # lines (FIXME)
+
+        # finish
         self.ctx.stroke()
 
-    def __text(self, text, x, y, size, relative="c"):
-        # font size
-        self.ctx.set_font_size(size)
-
-        # position
-        x_diff = 0
-        y_diff = 0
-        x_bearing, y_bearing, width, height, x_advance, y_advance = self.ctx.text_extents(text)
-
-        if relative == "c":
-            # center
-            x_diff = -(width/2 + x_bearing)
-            y_diff = -(height/2 + y_bearing)
-        elif relative == "tl":
-            # top left
-            x_diff = 0
-            y_diff = +height
-        elif relative == "tr":
-            # top right
-            x_diff = -width - x_bearing
-            y_diff = +height
-        elif relative == "br":
-            # bottom right
-            x_diff = -width - x_bearing
-            y_diff = 0
-
-        self.ctx.move_to(x + x_diff, y + y_diff)
-
-        # draw
-        self.ctx.show_text(text)
