@@ -14,20 +14,19 @@ class CalendarError(Exception):
 
 class DataReader:
     """Reads calendar data from CSV file."""
-    def __init__(self, filename, year):
-        self.filename = filename
+    def __init__(self, year):
         self.year = year
         self.data = {}
 
-    def read(self):
+    def read(self, filename):
         try:
-            f = open(self.filename, 'r')
+            f = open(filename, 'r')
             csv_reader = csv.reader(f, dialect="excel")
 
             for row in csv_reader:
                 # check for valid data
                 if len(row) < 3 or len(row) > 4:
-                    raise CalendarError("Error in file: " + self.filename +
+                    raise CalendarError("Error in file: " + filename +
                                         " (wrong number of columns)")
 
                 # values
@@ -46,10 +45,10 @@ class DataReader:
                     self.data[key] = []
                 self.data[key].append([text, highlight])
         except IOError as e:
-            raise CalendarError("Can't open file: " + self.filename + " (" +
+            raise CalendarError("Can't open file: " + filename + " (" +
                                 str(e) + ")")
         except TypeError as e:
-            raise CalendarError("Error in file: " + self.filename +
+            raise CalendarError("Error in file: " + filename +
                                 " (month must be a number)")
 
     def get(self, date):
@@ -106,9 +105,9 @@ class Calendar:
         self.locale = locale
         self.ctx = None
 
-        self.data_top = None
-        self.data_bottom = None
-        self.data_main = None
+        self.data_top = DataReader(self.year)
+        self.data_bottom = DataReader(self.year)
+        self.data_main = DataReader(self.year)
 
     def create(self, filename):
         # init cairo
@@ -137,17 +136,12 @@ class Calendar:
         self.colors.append([normal, light])
 
     def add_data(self, filename, position):
-        # read data
-        tmp = DataReader(filename, self.year)
-        tmp.read()
-
-        # save
         if position == "top":
-            self.data_top = tmp
+            self.data_top.read(filename)
         elif position == "bottom":
-            self.data_bottom = tmp
+            self.data_bottom.read(filename)
         elif position == "main":
-            self.data_main = tmp
+            self.data_main.read(filename)
         else:
             raise CalendarError("Unknown position for data: " + position)
 
@@ -229,8 +223,7 @@ class Calendar:
         # check data for highlight
         highlight = False
         for d in [self.data_top, self.data_main, self.data_bottom]:
-            if d:
-                highlight = highlight or d.is_highlighted(date)
+            highlight = highlight or d.is_highlighted(date)
 
         # rectangle
         color = None
@@ -260,23 +253,19 @@ class Calendar:
         # data
         text_padding = max(0.1*Calendar.SIZE_DATA, 3)
         # top
-        if self.data_top:
-            self.print_text(self.data_top.get_str(date),
-                            x + Calendar.BOX_WIDTH - text_padding,
-                            y + text_padding, Calendar.SIZE_DATA,
-                            relative="tr")
+        self.print_text(self.data_top.get_str(date),
+                        x + Calendar.BOX_WIDTH - text_padding,
+                        y + text_padding, Calendar.SIZE_DATA, relative="tr")
         # bottom
-        if self.data_bottom:
-            self.print_text(self.data_bottom.get_str(date),
-                            x + text_padding,
-                            y + Calendar.BOX_HEIGHT - text_padding,
-                            Calendar.SIZE_DATA, relative="bl")
+        self.print_text(self.data_bottom.get_str(date),
+                        x + text_padding,
+                        y + Calendar.BOX_HEIGHT - text_padding,
+                        Calendar.SIZE_DATA, relative="bl")
         # main
-        if self.data_main:
-            self.print_text(self.data_main.get_str(date),
-                            x + Calendar.BOX_WIDTH/2 + Calendar.DATA_MAIN_SHIFT,
-                            y + Calendar.BOX_HEIGHT/2,
-                            Calendar.SIZE_DATA_MAIN, relative="c")
+        self.print_text(self.data_main.get_str(date),
+                        x + Calendar.BOX_WIDTH/2 + Calendar.DATA_MAIN_SHIFT,
+                        y + Calendar.BOX_HEIGHT/2, Calendar.SIZE_DATA_MAIN,
+                        relative="c")
 
     def __rectangle(self, x, y, w, h, fill_color=None):
         # print rectangle
