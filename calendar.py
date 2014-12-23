@@ -93,6 +93,8 @@ class Calendar:
     SIZE_DATA = 10
     SIZE_DATA_MAIN = 20
 
+    DATA_MAIN_SHIFT = 13
+
     DEFAULT_COLOR = {'red': 0, 'green': 0, 'blue': 0}
 
     # colors
@@ -272,7 +274,7 @@ class Calendar:
         # main
         if self.data_main:
             self.print_text(self.data_main.get_str(date),
-                            x + Calendar.BOX_WIDTH/2,
+                            x + Calendar.BOX_WIDTH/2 + Calendar.DATA_MAIN_SHIFT,
                             y + Calendar.BOX_HEIGHT/2,
                             Calendar.SIZE_DATA_MAIN, relative="c")
 
