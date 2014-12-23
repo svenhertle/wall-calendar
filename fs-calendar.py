@@ -1,10 +1,13 @@
+#!/usr/bin/python3
+
 from calendar import Calendar, CalendarError
 import sys
+import argparse
 
 class FSCalendar(Calendar):
     BLUE = {'red': 75/255, 'green': 101/255, 'blue': 170/255}
 
-    def __init__(self, year):
+    def __init__(self, year, birthdays, events_small, events_main):
         Calendar.__init__(self, year, "de_DE")
 
         # colors
@@ -16,9 +19,9 @@ class FSCalendar(Calendar):
                        {'red': 255/255, 'green': 254/255, 'blue': 191/255})
 
         # data sources
-        self.add_data("birthday.csv", "top")
-        self.add_data("events_small.csv", "bottom")
-        self.add_data("events_big.csv", "main")
+        self.add_data(birthdays, "top")
+        self.add_data(events_small, "bottom")
+        self.add_data(events_main, "main")
 
     def create(self, filename):
         Calendar.create(self, filename)
@@ -55,9 +58,25 @@ class FSCalendar(Calendar):
 
 
 if __name__ == "__main__":
+    # command line arguments
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-y", "--year", type=int, required=True,
+                        help="year of the calendar")
+    parser.add_argument("-b", "--birthdays", required=True,
+                        metavar="file", help="CSV file with birthdays")
+    parser.add_argument("-e", "--events", required=True, metavar="file",
+                        help="CSV file with events, that are printed small")
+    parser.add_argument("-m", "--main-events", required=True, metavar="file",
+                        help="CSV file with main events, that are printed big")
+    parser.add_argument("-o", "--output", required=True, metavar="file",
+                        help="output file for SVG")
+    args = parser.parse_args()
+
+    # run
     try:
-        cal = FSCalendar(2015)
-        cal.create("test.svg")
+        cal = FSCalendar(args.year, args.birthdays, args.events,
+                         args.main_events)
+        cal.create(args.output)
     except CalendarError as e:
         print(str(e))
         sys.exit(1)
