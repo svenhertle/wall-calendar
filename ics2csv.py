@@ -26,7 +26,7 @@ def convert_ics_csv(in_file, out_file, year):
             day = event['DTSTART'].dt
             if day.year == year:
                 out.write(str(day.month) + "," + str(day.day) + ",\"" +
-                          summary + "\"\n")
+                          summary + "\",no\n")
 
         # close file
         out.close()

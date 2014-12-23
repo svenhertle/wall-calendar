@@ -19,9 +19,17 @@ class FSCalendar(Calendar):
                        {'red': 255/255, 'green': 254/255, 'blue': 191/255})
 
         # data sources
-        self.add_data(birthdays, "top")
-        self.add_data(events_small, "bottom")
-        self.add_data(events_main, "main")
+        if birthdays:
+            for f in birthdays:
+                self.add_data(f, "top")
+
+        if events_small:
+            for f in events_small:
+                self.add_data(f, "bottom")
+
+        if events_main:
+            for f in events_main:
+                self.add_data(f, "main")
 
     def create(self, filename):
         Calendar.create(self, filename)
@@ -62,11 +70,13 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-y", "--year", type=int, required=True,
                         help="year of the calendar")
-    parser.add_argument("-b", "--birthdays", required=True,
+    parser.add_argument("-b", "--birthdays", nargs="+",
                         metavar="file", help="CSV file with birthdays")
-    parser.add_argument("-e", "--events", required=True, metavar="file",
+    parser.add_argument("-e", "--events", metavar="file",
+                        nargs="+",
                         help="CSV file with events, that are printed small")
-    parser.add_argument("-m", "--main-events", required=True, metavar="file",
+    parser.add_argument("-m", "--main-events", metavar="file",
+                        nargs="+",
                         help="CSV file with main events, that are printed big")
     parser.add_argument("-o", "--output", required=True, metavar="file",
                         help="output file for SVG")
