@@ -1,4 +1,5 @@
 from calendar import Calendar, CalendarError
+import sys
 
 class FSCalendar(Calendar):
     BLUE = {'red': 75/255, 'green': 101/255, 'blue': 170/255}
@@ -14,11 +15,17 @@ class FSCalendar(Calendar):
         self.add_color({'red': 255/255, 'green': 253/255, 'blue': 38/255},
                        {'red': 255/255, 'green': 254/255, 'blue': 191/255})
 
+        # data sources
+        self.add_data("birthday.csv", "top")
+
     def create(self, filename):
         Calendar.create(self, filename)
 
+        # logo (FIXME)
+        self.print_text("M P I", self.WIDTH-100, 10, 300, FSCalendar.BLUE, "tr")
+
         # print year with different bases
-        self.print_text(str(self.year), 0, 0, 100, FSCalendar.BLUE)
+        self.print_text(str(self.year), 2000, 50, 200, FSCalendar.BLUE)
         self.print_text(self.__to_base(self.year, 16), 0, 0, 100,
                         FSCalendar.BLUE)
 
@@ -46,5 +53,9 @@ class FSCalendar(Calendar):
 
 
 if __name__ == "__main__":
-    cal = FSCalendar(2015)
-    cal.create("test.svg")
+    try:
+        cal = FSCalendar(2015)
+        cal.create("test.svg")
+    except CalendarError as e:
+        print(str(e))
+        sys.exit(1)

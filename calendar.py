@@ -1,6 +1,7 @@
 import cairocffi as cairo
 import datetime
 import locale
+import csv
 
 
 class CalendarError(Exception):
@@ -9,6 +10,59 @@ class CalendarError(Exception):
 
     def __str__(self):
         return repr(self.value)
+
+
+class DataReader:
+    """Reads calendar data from CSV file."""
+    def __init__(self, filename, year):
+        self.filename = filename
+        self.year = year
+        self.data = {}
+
+    def read(self):
+        try:
+            f = open(self.filename, 'r')
+            csv_reader = csv.reader(f, dialect="excel")
+
+            for row in csv_reader:
+                # check for valid data
+                if len(row) < 3 or len(row) > 4:
+                    raise CalendarError("Error in file: " + self.filename +
+                                        " (wrong number of columns)")
+
+                # values
+                month = row[0]
+                day = row[1]
+                text = row[2]
+
+                # optional: highlight
+                highlight = False
+                if len(row) == 4 and row[3].lower() == "yes":
+                        highlight = True
+
+                # add to list
+                key = datetime.date(self.year, int(month), int(day))
+                self.data[key] = [text, highlight]
+        except IOError as e:
+            raise CalendarError("Can't open file: " + self.filename + " (" +
+                                str(e) + ")")
+        except TypeError as e:
+            raise CalendarError("Error in file: " + self.filename +
+                                " (month must be a number)")
+
+    def get(self, date):
+        if date in self.data:
+            return self.data[date]
+
+        return None
+
+    def get_str(self, date):
+        result = get(date)
+
+        if result:
+            return ", ".join(result)
+
+        return None
 
 
 class Calendar:
@@ -41,6 +95,10 @@ class Calendar:
         self.locale = locale
         self.ctx = None
 
+        self.data_top = None
+        self.data_bottom = None
+        self.data_main = None
+
     def create(self, filename):
         # init cairo
         surface = cairo.SVGSurface(filename, Calendar.WIDTH, Calendar.HEIGHT)
@@ -66,6 +124,21 @@ class Calendar:
 
     def add_color(self, normal, light):
         self.colors.append([normal, light])
+
+    def add_data(self, filename, position):
+        # read data
+        tmp = DataReader(filename, self.year)
+        tmp.read()
+
+        # save
+        if position == "top":
+            self.data_top = tmp
+        elif position == "bottom":
+            self.data_bottom = tmp
+        elif position == "main":
+            self.data_main = tmp
+        else:
+            raise CalendarError("Unknown position for data: " + position)
 
     def print_text(self, text, x, y, size, color=DEFAULT_COLOR, relative="tl"):
         # font size
