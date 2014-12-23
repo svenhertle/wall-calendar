@@ -42,7 +42,9 @@ class DataReader:
 
                 # add to list
                 key = datetime.date(self.year, int(month), int(day))
-                self.data[key] = [text, highlight]
+                if not key in self.data:
+                    self.data[key] = []
+                self.data[key].append([text, highlight])
         except IOError as e:
             raise CalendarError("Can't open file: " + self.filename + " (" +
                                 str(e) + ")")
@@ -54,15 +56,20 @@ class DataReader:
         if date in self.data:
             return self.data[date]
 
-        return None
+        return []
 
     def get_str(self, date):
-        result = get(date)
+        text = map(lambda x: x[0], self.get(date))
+        return ", ".join(text)
 
-        if result:
-            return ", ".join(result)
+    def is_highlighted(self, date):
+        highlight = False
 
-        return None
+        tmp = self.get(date)
+        for d in tmp:
+            highlight = highlight or d[1]
+
+        return highlight
 
 
 class Calendar:
@@ -83,6 +90,8 @@ class Calendar:
     SIZE_MONTH = 30
     SIZE_DAY_NUMBER = 35
     SIZE_DAY = 20
+    SIZE_DATA = 10
+    SIZE_DATA_MAIN = 20
 
     DEFAULT_COLOR = {'red': 0, 'green': 0, 'blue': 0}
 
@@ -215,13 +224,21 @@ class Calendar:
         # positions
         x, y = self.__coords_day(date)
 
+        # check data for highlight
+        highlight = False
+        for d in [self.data_top, self.data_main, self.data_bottom]:
+            if d:
+                highlight = highlight or d.is_highlighted(date)
+
         # rectangle
         color = None
         if len(self.colors) > 0:
             tmp = self.colors[(date.month-1) % len(self.colors)]
-            if date.weekday() == 5:  # saturday
+            if date.weekday() == 6:  # sunday
+                color = tmp[0]
+            elif date.weekday() == 5:  # saturday
                 color = tmp[1]
-            elif date.weekday() == 6:  # sunday
+            elif highlight:
                 color = tmp[0]
         self.__rectangle(x, y, Calendar.BOX_WIDTH, Calendar.BOX_HEIGHT, color)
 
@@ -237,6 +254,27 @@ class Calendar:
                         x + Calendar.BOX_WIDTH - text_padding,
                         y + Calendar.BOX_HEIGHT - text_padding,
                         Calendar.SIZE_DAY, relative="br")
+
+        # data
+        text_padding = max(0.1*Calendar.SIZE_DATA, 3)
+        # top
+        if self.data_top:
+            self.print_text(self.data_top.get_str(date),
+                            x + Calendar.BOX_WIDTH - text_padding,
+                            y + text_padding, Calendar.SIZE_DATA,
+                            relative="tr")
+        # bottom
+        if self.data_bottom:
+            self.print_text(self.data_bottom.get_str(date),
+                            x + text_padding,
+                            y + Calendar.BOX_HEIGHT - text_padding,
+                            Calendar.SIZE_DATA, relative="bl")
+        # main
+        if self.data_main:
+            self.print_text(self.data_main.get_str(date),
+                            x + Calendar.BOX_WIDTH/2,
+                            y + Calendar.BOX_HEIGHT/2,
+                            Calendar.SIZE_DATA_MAIN, relative="c")
 
     def __rectangle(self, x, y, w, h, fill_color=None):
         # print rectangle

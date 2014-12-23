@@ -17,6 +17,8 @@ class FSCalendar(Calendar):
 
         # data sources
         self.add_data("birthday.csv", "top")
+        self.add_data("events_small.csv", "bottom")
+        self.add_data("events_big.csv", "main")
 
     def create(self, filename):
         Calendar.create(self, filename)
