@@ -132,8 +132,8 @@ class Calendar:
         # finish
         self.ctx.stroke()
 
-    def add_color(self, normal, light):
-        self.colors.append([normal, light])
+    def add_color(self, month, saturday, sunday, highlight):
+        self.colors.append([month, saturday, sunday, highlight])
 
     def add_data(self, filename, position):
         if position == "top":
@@ -178,14 +178,16 @@ class Calendar:
 
     def __coords_space_boxes(self):
         space_x = (Calendar.WIDTH - Calendar.PADDING_LEFT -
-                  Calendar.PADDING_RIGHT - 12*Calendar.BOX_WIDTH) / 11
-        space_y = (Calendar.HEIGHT - Calendar.PADDING_TOP - Calendar.PADDING_BOTTOM - 32*Calendar.BOX_HEIGHT - space_x) / 30
+                   Calendar.PADDING_RIGHT - 12*Calendar.BOX_WIDTH) / 11
+        space_y = (Calendar.HEIGHT - Calendar.PADDING_TOP -
+                   Calendar.PADDING_BOTTOM - 32*Calendar.BOX_HEIGHT -
+                   space_x) / 30
 
         return (space_x, space_y)
 
     def __coords_month(self, date):
 
-        space_x,space_y = self.__coords_space_boxes()
+        space_x, space_y = self.__coords_space_boxes()
 
         x = Calendar.PADDING_LEFT + (date.month-1) * (space_x + Calendar.BOX_WIDTH)
         y = Calendar.PADDING_TOP
@@ -194,7 +196,7 @@ class Calendar:
     def __coords_day(self, date):
 
         month_x, month_y = self.__coords_month(date)
-        space_x,space_y = self.__coords_space_boxes()
+        space_x, space_y = self.__coords_space_boxes()
 
         x = month_x
         y = month_y + Calendar.BOX_HEIGHT + space_x + (date.day-1) * (space_y + Calendar.BOX_HEIGHT)
@@ -229,12 +231,12 @@ class Calendar:
         color = None
         if len(self.colors) > 0:
             tmp = self.colors[(date.month-1) % len(self.colors)]
-            if date.weekday() == 6:  # sunday
-                color = tmp[0]
-            elif date.weekday() == 5:  # saturday
+            if date.weekday() == 5:  # saturday
                 color = tmp[1]
-            elif highlight:
-                color = tmp[0]
+            elif date.weekday() == 6:  # sunday
+                color = tmp[2]
+            elif highlight:  # highlight
+                color = tmp[3]
         self.__rectangle(x, y, Calendar.BOX_WIDTH, Calendar.BOX_HEIGHT, color)
 
         # day number
@@ -282,4 +284,3 @@ class Calendar:
 
         # finish
         self.ctx.stroke()
-
