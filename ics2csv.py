@@ -1,7 +1,8 @@
 #!/usr/bin/python3
 
 import argparse
-from icalendar import Calendar, Event
+from icalendar import Calendar
+
 
 class ConversionError(Exception):
     def __init__(self, value):
@@ -9,6 +10,7 @@ class ConversionError(Exception):
 
     def __str__(self):
         return repr(self.value)
+
 
 def convert_ics_csv(in_file, out_file, year):
     try:
