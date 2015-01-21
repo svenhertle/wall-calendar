@@ -35,11 +35,21 @@ class FSCalendar(Calendar):
         Calendar.create(self, filename)
 
         # logo (FIXME)
-        self.print_text("M P I", self.WIDTH-100, 10, 300, FSCalendar.BLUE, "tr")
+        #self.print_text("M P I", self.WIDTH-100, 10, 300, FSCalendar.BLUE, "tr")
 
         # print year with different bases
         self.print_text(str(self.year), 2000, 50, 200, FSCalendar.BLUE)
-        self.print_text(self.__to_base(self.year, 16), 0, 0, 100,
+        self.print_text(self.__to_base(self.year, 16), 100, 175, 100,
+                        FSCalendar.BLUE)
+        self.print_text(self.__to_base(self.year, 2), 200, 50, 100,
+                        FSCalendar.BLUE)
+        self.print_text(self.__to_base(self.year, 8), 800, 175, 100,
+                        FSCalendar.BLUE)
+        self.print_text(self.__to_base(self.year, 17), 1000, 50, 100,
+                        FSCalendar.BLUE)
+        self.print_text(self.__to_base(self.year, 3), 1150, 175, 100,
+                        FSCalendar.BLUE)
+        self.print_text(self.__to_base(self.year, 21), 1530, 50, 100,
                         FSCalendar.BLUE)
 
     def __to_base(self, number, base):

@@ -234,7 +234,7 @@ class Calendar:
             elif date.weekday() == 5:  # saturday
                 color = tmp[1]
             elif highlight:
-                color = tmp[0]
+                color = tmp[1]
         self.__rectangle(x, y, Calendar.BOX_WIDTH, Calendar.BOX_HEIGHT, color)
 
         # day number
