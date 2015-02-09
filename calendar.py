@@ -152,7 +152,8 @@ class Calendar:
         # position
         x_diff = 0
         y_diff = 0
-        x_bearing, y_bearing, width, height, x_advance, y_advance = self.ctx.text_extents(text)
+        x_bearing, y_bearing, width, height, x_advance, \
+            y_advance = self.ctx.text_extents(text)
 
         if relative == "c":  # center
             x_diff = -(width/2 + x_bearing)
@@ -189,7 +190,8 @@ class Calendar:
 
         space_x, space_y = self.__coords_space_boxes()
 
-        x = Calendar.PADDING_LEFT + (date.month-1) * (space_x + Calendar.BOX_WIDTH)
+        x = Calendar.PADDING_LEFT + (date.month-1) * \
+            (space_x + Calendar.BOX_WIDTH)
         y = Calendar.PADDING_TOP
         return (x, y)
 
@@ -199,7 +201,8 @@ class Calendar:
         space_x, space_y = self.__coords_space_boxes()
 
         x = month_x
-        y = month_y + Calendar.BOX_HEIGHT + space_x + (date.day-1) * (space_y + Calendar.BOX_HEIGHT)
+        y = month_y + Calendar.BOX_HEIGHT + space_x + (date.day-1) * \
+            (space_y + Calendar.BOX_HEIGHT)
         return (x, y)
 
     def __print_month_label(self, date):
