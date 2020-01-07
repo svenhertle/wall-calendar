@@ -99,7 +99,7 @@ class Calendar:
     # colors
     colors = []
 
-    def __init__(self, year, locale="de_DE"):
+    def __init__(self, year, locale="de_DE.utf8"):
         # config
         self.year = year
         self.locale = locale
