@@ -3,6 +3,8 @@
 from calendar import Calendar, CalendarError
 import sys
 import argparse
+import cairocffi as cairo#
+import os
 
 
 class FSCalendar(Calendar):
@@ -59,6 +61,14 @@ class FSCalendar(Calendar):
                         FSCalendar.BLUE)
         self.print_text(self.__to_base(self.year, 21), 1530, 50, 100,
                         FSCalendar.BLUE)
+        
+        #check for png and print it on the calendar if present
+        if os.path.exists("../wall-calendar/fsmpi_fixed.png"):
+             self.print_png(self.load_png("../wall-calendar/fsmpi_fixed.png"))
+
+    def load_png(self, path: str): 
+        pngsurface=cairo.ImageSurface.create_from_png(path)
+        return pngsurface
 
     def __to_base(self, number, base):
         if base < 2 or base > 36:
@@ -98,6 +108,8 @@ if __name__ == "__main__":
                         help="CSV file with main events, that are printed big")
     parser.add_argument("-o", "--output", required=True, metavar="file",
                         help="output file for SVG")
+    parser.add_argument("-opdf", "--output-pdf", required=False, metavar="file",
+                        help="output file for PDF")
     args = parser.parse_args()
 
     # run
@@ -105,6 +117,14 @@ if __name__ == "__main__":
         cal = FSCalendar(args.year, args.birthdays, args.events,
                          args.main_events)
         cal.create(args.output)
+
+        if args.output_pdf:
+            pdf = cairo.PDFSurface(args.output_pdf, Calendar.WIDTH, Calendar.HEIGHT)
+            ctx = cairo.Context(pdf)
+
+            ctx.set_source_surface(cal.surface)
+            ctx.paint()
+
     except CalendarError as e:
         print(str(e))
         sys.exit(1)

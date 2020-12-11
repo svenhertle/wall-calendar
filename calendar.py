@@ -4,6 +4,7 @@ import locale
 import csv
 
 
+
 class CalendarError(Exception):
     def __init__(self, value):
         self.value = value
@@ -99,11 +100,12 @@ class Calendar:
     # colors
     colors = []
 
-    def __init__(self, year, locale="de_DE.utf8"):
+    def __init__(self, year, locale="de_DE.utf-8"):
         # config
         self.year = year
         self.locale = locale
         self.ctx = None
+        self.surface=None
 
         self.data_top = DataReader(self.year)
         self.data_bottom = DataReader(self.year)
@@ -111,11 +113,14 @@ class Calendar:
 
     def create(self, filename):
         # init cairo
-        surface = cairo.SVGSurface(filename, Calendar.WIDTH, Calendar.HEIGHT)
-        self.ctx = cairo.Context(surface)
+        self.surface = cairo.SVGSurface(filename, Calendar.WIDTH, Calendar.HEIGHT)
+        self.ctx = cairo.Context(self.surface)
 
-        # set locale for day and month names
-        locale.setlocale(locale.LC_ALL, self.locale)
+        # set locale for day and month names, if it doesn't work try (locale.LC_ALL, ''),(locale.LC_ALL, self.locale)
+        try:
+            locale.setlocale(locale.LC_ALL, self.locale)
+        except:
+            locale.setlocale(locale.LC_ALL, '')   
 
         # print month label
         for m in range(12):
@@ -271,6 +276,23 @@ class Calendar:
                         x + Calendar.BOX_WIDTH/2 + Calendar.DATA_MAIN_SHIFT,
                         y + Calendar.BOX_HEIGHT/2, Calendar.SIZE_DATA_MAIN,
                         relative="c")
+
+    
+    def print_png(self, loaded_png):
+        #create new area to paint
+        self.ctx.rectangle(2500, 40, 800, 270)
+        self.ctx.clip()
+
+        #reset path
+        self.ctx.new_path()
+
+        # paint png on clip
+        self.ctx.set_source_surface(loaded_png, 2550., 40.)
+        self.ctx.paint()
+        
+        #reset clip and make painting with other functions possible
+        self.ctx.reset_clip()
+        self.surface.flush()
 
     def __rectangle(self, x, y, w, h, fill_color=None):
         # print rectangle
