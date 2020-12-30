@@ -3,7 +3,6 @@
 from calendar import Calendar, CalendarError
 import sys
 import argparse
-import cairocffi as cairo#
 import os
 
 
@@ -43,10 +42,6 @@ class FSCalendar(Calendar):
     def create(self, filename):
         Calendar.create(self, filename)
 
-        # logo (FIXME)
-        #self.print_text("M P I", self.WIDTH-100, 10, 300, FSCalendar.BLUE,
-        #                "tr")
-
         # print year with different bases
         self.print_text(str(self.year), 2000, 50, 200, FSCalendar.BLUE)
         self.print_text(self.__to_base(self.year, 16), 100, 175, 100,
@@ -62,13 +57,15 @@ class FSCalendar(Calendar):
         self.print_text(self.__to_base(self.year, 21), 1530, 50, 100,
                         FSCalendar.BLUE)
         
-        #check for png and print it on the calendar if present
-        if os.path.exists("../wall-calendar/fsmpi_fixed.png"):
-             self.print_png(self.load_png("../wall-calendar/fsmpi_fixed.png"))
-
-    def load_png(self, path: str): 
-        pngsurface=cairo.ImageSurface.create_from_png(path)
-        return pngsurface
+        # add logo (if file is present)
+        logo_path = os.path.join(os.path.dirname(__file__), "logo.png")
+        if os.path.exists(logo_path):
+            # change sizes if logo file changes
+            logo_w = 700
+            logo_h = 220
+            self.print_png(logo_path, Calendar.WIDTH-Calendar.PADDING_RIGHT-logo_w, 50, logo_w, logo_h)
+        else:
+            print("Warning: logo file not found (tried {})".format(logo_path))
 
     def __to_base(self, number, base):
         if base < 2 or base > 36:
@@ -108,8 +105,8 @@ if __name__ == "__main__":
                         help="CSV file with main events, that are printed big")
     parser.add_argument("-o", "--output", required=True, metavar="file",
                         help="output file for SVG")
-    parser.add_argument("-opdf", "--output-pdf", required=False, metavar="file",
-                        help="output file for PDF")
+    parser.add_argument("-p", "--output-pdf", required=False, metavar="file",
+                        help="additional output file for PDF")
     args = parser.parse_args()
 
     # run
@@ -119,11 +116,7 @@ if __name__ == "__main__":
         cal.create(args.output)
 
         if args.output_pdf:
-            pdf = cairo.PDFSurface(args.output_pdf, Calendar.WIDTH, Calendar.HEIGHT)
-            ctx = cairo.Context(pdf)
-
-            ctx.set_source_surface(cal.surface)
-            ctx.paint()
+            cal.save_as_pdf(args.output_pdf)
 
     except CalendarError as e:
         print(str(e))
