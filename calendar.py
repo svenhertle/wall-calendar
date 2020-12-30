@@ -4,6 +4,7 @@ import locale
 import csv
 
 
+
 class CalendarError(Exception):
     def __init__(self, value):
         self.value = value
@@ -15,7 +16,7 @@ class CalendarError(Exception):
 class DataReader:
     """Reads calendar data from CSV file."""
     def __init__(self, year):
-        self.year = year
+        self._year = year
         self.data = {}
 
     def read(self, filename):
@@ -40,7 +41,7 @@ class DataReader:
                         highlight = True
 
                 # add to list
-                key = datetime.date(self.year, int(month), int(day))
+                key = datetime.date(self._year, int(month), int(day))
                 if not key in self.data:
                     self.data[key] = []
                 self.data[key].append([text, highlight])
@@ -99,61 +100,82 @@ class Calendar:
     # colors
     colors = []
 
-    def __init__(self, year, locale="de_DE.utf8"):
+    def __init__(self, year, locale="de_DE.utf-8"):
         # config
-        self.year = year
-        self.locale = locale
-        self.ctx = None
+        self._year = year
+        self._locale = locale
+        self._ctx = None
+        self._surface=None
 
-        self.data_top = DataReader(self.year)
-        self.data_bottom = DataReader(self.year)
-        self.data_main = DataReader(self.year)
+        self._data_top = DataReader(self._year)
+        self._data_bottom = DataReader(self._year)
+        self._data_main = DataReader(self._year)
+
+    @property
+    def year(self):
+        return self._year
 
     def create(self, filename):
+        """
+        Create the calendar and save to SVG file.
+        """
         # init cairo
-        surface = cairo.SVGSurface(filename, Calendar.WIDTH, Calendar.HEIGHT)
-        self.ctx = cairo.Context(surface)
+        self._surface = cairo.SVGSurface(filename, Calendar.WIDTH, Calendar.HEIGHT)
+        self._ctx = cairo.Context(self._surface)
 
-        # set locale for day and month names
-        locale.setlocale(locale.LC_ALL, self.locale)
+        # set locale for day and month names, if it doesn't work try (locale.LC_ALL, ''),(locale.LC_ALL, self._locale)
+        try:
+            locale.setlocale(locale.LC_ALL, self._locale)
+        except:
+            locale.setlocale(locale.LC_ALL, '')   
 
         # print month label
         for m in range(12):
-            month = datetime.date(self.year, m+1, 1)
+            month = datetime.date(self._year, m+1, 1)
             self.__print_month_label(month)
 
         # print days
-        day = datetime.date(self.year, 1, 1)
+        day = datetime.date(self._year, 1, 1)
         delta = datetime.timedelta(1)
-        while day.year == self.year:
+        while day.year == self._year:
             self.__print_day(day)
             day += delta
 
         # finish
-        self.ctx.stroke()
+        self._ctx.stroke()
+
+    def save_as_pdf(self, filename):
+        """
+        Save created calendar additionally as PDF. Must only be called after `create`.
+        """
+        pdf = cairo.PDFSurface(filename, Calendar.WIDTH, Calendar.HEIGHT)
+        ctx = cairo.Context(pdf)
+
+        ctx.set_source_surface(self._surface)
+        ctx.paint()
 
     def add_color(self, month, saturday, sunday, highlight):
         self.colors.append([month, saturday, sunday, highlight])
 
     def add_data(self, filename, position):
         if position == "top":
-            self.data_top.read(filename)
+            self._data_top.read(filename)
         elif position == "bottom":
-            self.data_bottom.read(filename)
+            self._data_bottom.read(filename)
         elif position == "main":
-            self.data_main.read(filename)
+            self._data_main.read(filename)
         else:
             raise CalendarError("Unknown position for data: " + position)
 
     def print_text(self, text, x, y, size, color=DEFAULT_COLOR, relative="tl"):
         # font size
-        self.ctx.set_font_size(size)
+        self._ctx.set_font_size(size)
 
         # position
         x_diff = 0
         y_diff = 0
         x_bearing, y_bearing, width, height, x_advance, \
-            y_advance = self.ctx.text_extents(text)
+            y_advance = self._ctx.text_extents(text)
 
         if relative == "c":  # center
             x_diff = -(width/2 + x_bearing)
@@ -167,15 +189,34 @@ class Calendar:
             x_diff = -width - x_bearing
 
         # set position for text
-        self.ctx.move_to(x + x_diff, y + y_diff)
+        self._ctx.move_to(x + x_diff, y + y_diff)
 
         # draw with color
-        self.ctx.set_source_rgb(**color)
-        self.ctx.show_text(text)
-        self.ctx.set_source_rgb(**Calendar.DEFAULT_COLOR)
+        self._ctx.set_source_rgb(**color)
+        self._ctx.show_text(text)
+        self._ctx.set_source_rgb(**Calendar.DEFAULT_COLOR)
 
         # finish
-        self.ctx.stroke()
+        self._ctx.stroke()
+
+    def print_png(self, filepath, x, y, w, h):
+        #create new area to paint
+        self._ctx.rectangle(x, y, w, h)
+        self._ctx.clip()
+
+        #reset path
+        self._ctx.new_path()
+
+        # load png
+        loaded_png = cairo.ImageSurface.create_from_png(filepath)
+
+        # paint png on clip
+        self._ctx.set_source_surface(loaded_png, x, y)
+        self._ctx.paint()
+
+        # reset clip and make painting with other functions possible
+        self._ctx.reset_clip()
+        self._surface.flush()
 
     def __coords_space_boxes(self):
         space_x = (Calendar.WIDTH - Calendar.PADDING_LEFT -
@@ -227,7 +268,7 @@ class Calendar:
 
         # check data for highlight
         highlight = False
-        for d in [self.data_top, self.data_main, self.data_bottom]:
+        for d in [self._data_top, self._data_main, self._data_bottom]:
             highlight = highlight or d.is_highlighted(date)
 
         # rectangle
@@ -258,32 +299,32 @@ class Calendar:
         # data
         text_padding = max(0.1*Calendar.SIZE_DATA, 3)
         # top
-        self.print_text(self.data_top.get_str(date),
+        self.print_text(self._data_top.get_str(date),
                         x + Calendar.BOX_WIDTH - text_padding,
                         y + text_padding, Calendar.SIZE_DATA, relative="tr")
         # bottom
-        self.print_text(self.data_bottom.get_str(date),
+        self.print_text(self._data_bottom.get_str(date),
                         x + text_padding,
                         y + Calendar.BOX_HEIGHT - text_padding,
                         Calendar.SIZE_DATA, relative="bl")
         # main
-        self.print_text(self.data_main.get_str(date),
+        self.print_text(self._data_main.get_str(date),
                         x + Calendar.BOX_WIDTH/2 + Calendar.DATA_MAIN_SHIFT,
                         y + Calendar.BOX_HEIGHT/2, Calendar.SIZE_DATA_MAIN,
                         relative="c")
 
     def __rectangle(self, x, y, w, h, fill_color=None):
         # print rectangle
-        self.ctx.rectangle(x, y, w, h)
+        self._ctx.rectangle(x, y, w, h)
 
         # fill with color
         if not fill_color is None:
-            self.ctx.set_source_rgb(**fill_color)
-            self.ctx.fill()
-            self.ctx.set_source_rgb(**Calendar.DEFAULT_COLOR)
+            self._ctx.set_source_rgb(**fill_color)
+            self._ctx.fill()
+            self._ctx.set_source_rgb(**Calendar.DEFAULT_COLOR)
 
             # print border
-            self.ctx.rectangle(x, y, w, h)  # lines (FIXME)
+            self._ctx.rectangle(x, y, w, h)  # lines
 
         # finish
-        self.ctx.stroke()
+        self._ctx.stroke()
